@@ -12,19 +12,31 @@ export class OnboardingService {
   async sendWelcomeIntro(phoneNumber: string): Promise<void> {
     await this.whatsapp.sendButtons(
       phoneNumber,
-      `🏘️ *Welcome to Citi Master!*
+      `🏘️ *Citi Master* – Your Local Services Partner
 
-Book home services instantly via WhatsApp
+Premium home services at your doorstep
 
-🛠️ AC • Cleaning • Plumbing • Electrical • Painting
+*Services Available:*
+❄️ AC Repair & Service
+🧹 Deep Cleaning
+🔧 Plumbing Solutions
+⚡ Electrical Work
+🎨 Painting & More
 
-📍 Serving: Delhi NCR | Jhansi
+*Why Choose Us:*
+✓ Verified professionals
+✓ Transparent pricing
+✓ Same/next day service
+✓ Guaranteed satisfaction
 
-What brings you here?`,
+📍 *Serving:* Delhi NCR | Jhansi
+⏰ *Available:* 9 AM - 9 PM
+
+*How can we help you today?*`,
       [
-        { id: 'start_customer', title: '📱 Book Service' },
-        { id: 'start_vendor', title: '👷 Become Partner' },
-        { id: 'start_help', title: '❓ Learn More' }
+        { id: 'customer_book', title: '🛠️ Book Service' },
+        { id: 'vendor_join', title: '👷 Join as Partner' },
+        { id: 'more_info', title: 'ℹ️ Learn More' }
       ]
     );
     

@@ -40,8 +40,19 @@ export class ConversationService {
       return;
     }
 
-    if (message.buttonReply?.id === 'help_info') {
+    if (message.buttonReply?.id === 'more_info' || message.buttonReply?.id === 'help_info') {
       await this.onboarding.sendHelpInfo(message.from, 'general');
+      return;
+    }
+
+    // Handle button responses from help screen
+    if (message.buttonReply?.id === 'help_book') {
+      await this.onboarding.sendServiceCategories(message.from);
+      return;
+    }
+
+    if (message.buttonReply?.id === 'help_partner') {
+      await this.onboarding.startVendorOnboarding(message.from);
       return;
     }
 
