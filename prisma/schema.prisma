@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id            String    @id @default(cuid())
+  phoneNumber   String    @unique
+  name          String?
+  preferredLang String    @default("en") // en, hi
+  address       Json?     // { street, city, pincode, coordinates }
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  leads         Lead[]
+  messages      MessageLog[]
+  payments      Payment[]
+  issues        Issue[]
+
+  @@index([phoneNumber])
+  @@map("customers")
+}
+
+model Vendor {
+  id              String    @id @default(cuid())
+  phoneNumber     String    @unique
+  businessName    String
+  ownerName       String
+  categories      String[]  // ["AC", "CLEANING", etc.]
+  subcategories   String[]  // ["AC_REPAIR", "AC_INSTALLATION", etc.]
+  serviceAreas    String[]  // Pincode list
+  location        Json      // { address, coordinates }
+  rating          Float     @default(0)
+  totalRatings    Int       @default(0)
+  avgAcceptTime   Int?      // minutes
+  acceptanceRate  Float     @default(0)
+  priceRange      String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  availableSlots  Json      // { dayOfWeek: [{ start, end }] }
+  isActive        Boolean   @default(true)
+  isFeatured      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  assignments     Assignment[]
+  messages        MessageLog[]
+  payments        Payment[]
+  featured        FeaturedPlacement[]
+
+  @@index([phoneNumber])
+  @@index([categories])
+  @@index([serviceAreas])
+  @@map("vendors")
+}
+
+model Lead {
+  id            String    @id @default(cuid())
+  customerId    String
+  category      String
+  subcategory   String
+  address       Json      // { street, city, pincode, coordinates }
+  preferredSlot DateTime?
+  description   String?
+  urgency       String    @default("NORMAL") // URGENT, NORMAL, FLEXIBLE
+  budget        Float?
+  status        String    @default("PENDING") // PENDING, ASSIGNED, ACCEPTED, COMPLETED, CANCELLED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customer      Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignments   Assignment[]
+  payments      Payment[]
+  issues        Issue[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model Assignment {
+  id              String    @id @default(cuid())
+  leadId          String
+  vendorId        String
+  matchScore      Float     // 0-100
+  offerPrice      Float?
+  status          String    @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED
+  sentAt          DateTime  @default(now())
+  respondedAt     DateTime?
+  completedAt     DateTime?
+  customerRating  Int?      // 1-5
+  customerReview  String?
+  vendorRating    Int?      // Vendor rates customer
+  vendorReview    String?
+
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  vendor          Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("assignments")
+}
+
+model MessageLog {
+  id            String    @id @default(cuid())
+  phoneNumber   String
+  direction     String    // INBOUND, OUTBOUND
+  messageType   String    // text, interactive, template, image, etc.
+  content       Json      // Full message payload
+  waMessageId   String?   @unique
+  customerId    String?
+  vendorId      String?
+  timestamp     DateTime  @default(now())
+
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  vendor        Vendor?   @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  @@index([phoneNumber])
+  @@index([timestamp])
+  @@map("message_logs")
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  leadId          String
+  customerId      String
+  vendorId        String
+  amount          Float
+  commission      Float
+  status          String    @default("PENDING") // PENDING, SUCCESS, FAILED, REFUNDED
+  paymentMethod   String?   // CASH, UPI, CARD, etc.
+  razorpayOrderId String?   @unique
+  razorpayPaymentId String? @unique
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vendor          Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Issue {
+  id            String    @id @default(cuid())
+  leadId        String?
+  customerId    String
+  category      String    // VENDOR_NO_SHOW, QUALITY_ISSUE, PAYMENT_ISSUE, etc.
+  description   String
+  status        String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority      String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  resolvedAt    DateTime?
+  resolution    String?
+  createdAt     DateTime  @default(now())
+
+  lead          Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([status])
+  @@map("issues")
+}
+
+model FeaturedPlacement {
+  id            String    @id @default(cuid())
+  vendorId      String
+  category      String
+  subcategory   String?
+  serviceArea   String    // Pincode
+  startDate     DateTime
+  endDate       DateTime
+  cost          Float
+  impressions   Int       @default(0)
+  clicks        Int       @default(0)
+  conversions   Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  vendor        Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([category, serviceArea])
+  @@index([startDate, endDate])
+  @@map("featured_placements")
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    // PERCENTAGE, FIXED
+  discountValue Float
+  minOrderValue Float?
+  maxDiscount   Float?
+  usageLimit    Int?
+  usedCount     Int       @default(0)
+  validFrom     DateTime
+  validUntil    DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@index([code])
+  @@index([validFrom, validUntil])
+  @@map("coupons")
+}
