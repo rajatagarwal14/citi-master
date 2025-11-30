@@ -9,41 +9,31 @@ async function testCompleteFlow() {
   console.log('🧪 Testing Complete Onboarding Flow\n');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-  // Test 1: Welcome message with platform intro
-  console.log('1️⃣  Sending welcome introduction...');
-  await whatsapp.sendText(
+  // Test 1: Welcome message with buttons
+  console.log('1️⃣  Sending welcome with action buttons...');
+  await whatsapp.sendButtons(
     phoneNumber,
     `🏘️ *Welcome to Citi Master!*
 
-Your trusted local services platform managed by experienced professionals.
+Book home services instantly via WhatsApp
 
-🔹 *For Customers:*
-Book AC, Cleaning, Plumbing, Electrical, Painting & more services instantly via WhatsApp!
+🛠️ AC • Cleaning • Plumbing • Electrical • Painting
 
-🔹 *For Service Providers:*
-Join our vendor network and grow your business with guaranteed leads.
+📍 Serving: Delhi NCR | Jhansi
 
-Reply with:
-📱 *BOOK* - Book a service
-👷 *PARTNER* - Become a vendor
-❓ *HELP* - Learn more`
+What brings you here?`,
+    [
+      { id: 'start_customer', title: '📱 Book Service' },
+      { id: 'start_vendor', title: '👷 Become Partner' },
+      { id: 'start_help', title: '❓ Learn More' }
+    ]
   );
   console.log('✅ Welcome message sent\n');
 
-  await sleep(2000);
+  await sleep(3000);
 
-  // Test 2: Customer onboarding
-  console.log('2️⃣  Sending customer onboarding flow...');
-  await whatsapp.sendText(
-    phoneNumber,
-    `👋 Hi! Welcome to Citi Master!\n\n📝 Quick Registration (2 steps):\n\n1️⃣ What's your name?`
-  );
-  console.log('✅ Customer onboarding started\n');
-
-  await sleep(2000);
-
-  // Test 3: Service categories list
-  console.log('3️⃣  Sending service categories...');
+  // Test 2: Service categories list (direct booking)
+  console.log('2️⃣  Sending service categories...');
   await whatsapp.sendList(
     phoneNumber,
     '🛠️ What service do you need?',
@@ -71,8 +61,8 @@ Reply with:
 
   await sleep(2000);
 
-  // Test 4: Vendor onboarding
-  console.log('4️⃣  Sending vendor onboarding...');
+  // Test 3: Vendor onboarding (when user clicks Join)
+  console.log('3️⃣  Sending vendor onboarding...');
   await whatsapp.sendButtons(
     phoneNumber,
     `👷 *Partner Onboarding*
@@ -106,57 +96,14 @@ Reply *START* to begin registration`,
   );
   console.log('✅ Vendor onboarding sent\n');
 
-  await sleep(2000);
-
-  // Test 5: Help/Info message
-  console.log('5️⃣  Sending help information...');
-  await whatsapp.sendText(
-    phoneNumber,
-    `📱 *For Customers:*
-
-🔹 Type "BOOK" to start booking
-🔹 We connect you with verified local vendors
-🔹 Transparent pricing
-🔹 Quick service (same day/next day)
-🔹 Pay after service completion
-🔹 Rate & review vendors
-
-💡 *How it works:*
-1. Tell us your need (AC repair, cleaning, etc)
-2. Select subcategory (repair, installation, etc)
-3. Share your full address with pincode
-4. Choose preferred date & time slot
-5. Get 3 best vendor matches
-6. Confirm booking
-7. Vendor arrives at scheduled time
-8. Pay after job done
-
-👷 *For Vendors/Partners:*
-
-🔹 Type "PARTNER" to register
-🔹 Get verified customer leads daily
-🔹 15% commission per booking
-🔹 No upfront fees
-🔹 Build your reputation with ratings
-
-📞 *Support:*
-Reply to this chat for assistance
-Hours: 9 AM - 9 PM (Mon-Sat)
-
-🌐 Service Areas: Delhi NCR | Jhansi`
-  );
-  console.log('✅ Help info sent\n');
-
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   console.log('✅ Complete flow tested!\n');
   console.log('📱 Check your WhatsApp (+919999663120)\n');
-  console.log('You should receive:');
-  console.log('  1. Platform welcome & introduction');
-  console.log('  2. Customer onboarding prompt');
-  console.log('  3. Service categories list (interactive)');
-  console.log('  4. Vendor onboarding with buttons');
-  console.log('  5. Detailed help information');
-  console.log('\n💡 Reply to any message to start the flow!\n');
+  console.log('You should receive 3 messages:');
+  console.log('  1. Welcome with action buttons');
+  console.log('  2. Service categories (interactive list)');
+  console.log('  3. Vendor onboarding (for partners)');
+  console.log('\n💡 Click any button to start!\n');
 }
 
 function sleep(ms: number): Promise<void> {

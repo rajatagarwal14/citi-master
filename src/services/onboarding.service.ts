@@ -10,22 +10,23 @@ export class OnboardingService {
    * Send welcome message with platform introduction
    */
   async sendWelcomeIntro(phoneNumber: string): Promise<void> {
-    const message = `🏘️ *Welcome to Citi Master!*
+    await this.whatsapp.sendButtons(
+      phoneNumber,
+      `🏘️ *Welcome to Citi Master!*
 
-Your trusted local services platform managed by experienced professionals.
+Book home services instantly via WhatsApp
 
-🔹 *For Customers:*
-Book AC, Cleaning, Plumbing, Electrical, Painting & more services instantly via WhatsApp!
+🛠️ AC • Cleaning • Plumbing • Electrical • Painting
 
-🔹 *For Service Providers:*
-Join our vendor network and grow your business with guaranteed leads.
+📍 Serving: Delhi NCR | Jhansi
 
-Reply with:
-📱 *BOOK* - Book a service
-👷 *PARTNER* - Become a vendor
-❓ *HELP* - Learn more`;
-
-    await this.whatsapp.sendText(phoneNumber, message);
+What brings you here?`,
+      [
+        { id: 'start_customer', title: '📱 Book Service' },
+        { id: 'start_vendor', title: '👷 Become Partner' },
+        { id: 'start_help', title: '❓ Learn More' }
+      ]
+    );
     
     logger.info({ phoneNumber }, 'Welcome intro sent');
   }
@@ -39,25 +40,20 @@ Reply with:
       where: { phoneNumber }
     });
 
-    if (customer) {
-      await this.whatsapp.sendText(
-        phoneNumber,
-        `👋 Welcome back ${customer.name || 'there'}!\n\nWhat service do you need today?`
-      );
+    if (customer && customer.name) {
+      // Returning customer - show services directly
       await this.sendServiceCategories(phoneNumber);
       return;
     }
 
-    // New customer - start registration
-    await this.whatsapp.sendText(
-      phoneNumber,
-      `👋 Hi! Welcome to Citi Master!\n\n📝 Quick Registration (2 steps):\n\n1️⃣ What's your name?`
-    );
+    // New customer - show services immediately (no name collection for now)
+    if (!customer) {
+      await prisma.customer.create({
+        data: { phoneNumber }
+      });
+    }
 
-    // Create pending customer record
-    await prisma.customer.create({
-      data: { phoneNumber }
-    });
+    await this.sendServiceCategories(phoneNumber);
   }
 
   /**
@@ -179,59 +175,60 @@ Reply *START* to begin registration`;
    * Send help/info message
    */
   async sendHelpInfo(phoneNumber: string, userType: 'customer' | 'vendor' | 'general'): Promise<void> {
-    let helpMsg = '';
+    if (userType === 'customer') {
+      await this.whatsapp.sendText(
+        phoneNumber,
+        `📱 *How Booking Works:*
 
-    if (userType === 'customer' || userType === 'general') {
-      helpMsg += `📱 *For Customers:*
-
-🔹 Reply "BOOK" to start booking
-🔹 We connect you with verified local vendors
-🔹 Transparent pricing
-🔹 Quick service (same day/next day)
-🔹 Pay after service completion
-🔹 Rate & review vendors
-
-💡 *How it works:*
-1. Tell us your need (AC repair, cleaning, etc)
-2. Select subcategory (repair, installation, etc)
-3. Share your full address with pincode
-4. Choose preferred date & time slot
-5. Get 3 best vendor matches
+1. Select service (AC, Plumbing, etc)
+2. Choose type (Repair, Installation)
+3. Share address with pincode
+4. Pick date & time
+5. Get 3 matched vendors
 6. Confirm booking
-7. Vendor arrives at scheduled time
-8. Pay after job done
+7. Pay after service done ✅
 
-`;
+🌐 *Available in:* Delhi NCR | Jhansi
+
+💬 Reply "BOOK" to start`
+      );
+    } else if (userType === 'vendor') {
+      await this.whatsapp.sendText(
+        phoneNumber,
+        `👷 *Partner Benefits:*
+
+✅ Get verified customer leads
+✅ ${(config.business.commissionRate * 100)}% commission only
+✅ No listing fees
+✅ Quick payments (T+2)
+✅ Build reputation with ratings
+
+📝 *5-min Registration:*
+Business name → Services → Areas → Bank details
+
+💬 Reply "PARTNER" to register`
+      );
+    } else {
+      // General help
+      await this.whatsapp.sendButtons(
+        phoneNumber,
+        `ℹ️ *About Citi Master*
+
+Local services platform connecting customers with verified vendors
+
+🛠️ Services: AC, Cleaning, Plumbing, Electrical, Painting, Carpentry
+
+📍 Areas: Delhi NCR | Jhansi
+
+⏰ Support: 9 AM - 9 PM (Mon-Sat)
+
+What would you like to do?`,
+        [
+          { id: 'help_book', title: '📱 Book Service' },
+          { id: 'help_partner', title: '👷 Become Partner' },
+        ]
+      );
     }
-
-    if (userType === 'vendor' || userType === 'general') {
-      helpMsg += `👷 *For Vendors/Partners:*
-
-🔹 Type "PARTNER" to register
-🔹 Get verified customer leads daily
-🔹 ${(config.business.commissionRate * 100)}% commission per booking
-🔹 No upfront fees
-🔹 Build your reputation with ratings
-🔹 Optional featured placement for more visibility
-
-📊 *Benefits:*
-• Consistent income stream
-• Professional platform
-• On-time payments (T+2)
-• Marketing & customer support handled
-• Focus only on service delivery
-
-`;
-    }
-
-    helpMsg += `\n📞 *Support:*
-Reply to this chat for assistance
-Hours: 9 AM - 9 PM (Mon-Sat)
-
-🌐 *Service Areas:*
-Delhi NCR | Jhansi | Expanding to more cities soon!`;
-
-    await this.whatsapp.sendText(phoneNumber, helpMsg);
   }
 
   /**
@@ -242,7 +239,7 @@ Delhi NCR | Jhansi | Expanding to more cities soon!`;
 
     // Check intent from message
     if (lowerMsg.includes('book') || lowerMsg.includes('service') || lowerMsg.includes('chahiye') || lowerMsg.includes('need')) {
-      await this.startCustomerOnboarding(phoneNumber);
+      await this.sendServiceCategories(phoneNumber);
       return;
     }
 
@@ -251,12 +248,7 @@ Delhi NCR | Jhansi | Expanding to more cities soon!`;
       return;
     }
 
-    if (lowerMsg.includes('help') || lowerMsg.includes('info') || lowerMsg === 'hi' || lowerMsg === 'hello') {
-      await this.sendWelcomeIntro(phoneNumber);
-      return;
-    }
-
-    // Default: Show welcome with options
+    // Default: Show welcome with buttons
     await this.sendWelcomeIntro(phoneNumber);
   }
 }

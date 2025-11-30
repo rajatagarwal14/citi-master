@@ -20,13 +20,29 @@ export class ConversationService {
 
     // Check if first-time user with greeting
     if (message.text && state.step === 'START' && !customer.name) {
-      const greetings = ['hi', 'hello', 'hey', 'start', 'book', 'partner', 'help'];
+      const greetings = ['hi', 'hello', 'hey', 'start'];
       const isGreeting = greetings.some(g => message.text!.toLowerCase().includes(g));
       
       if (isGreeting) {
         await this.onboarding.handleFirstContact(message.from, message.text);
         return;
       }
+    }
+
+    // Handle button responses from welcome screen
+    if (message.buttonReply?.id === 'customer_book') {
+      await this.onboarding.sendServiceCategories(message.from);
+      return;
+    }
+
+    if (message.buttonReply?.id === 'vendor_join') {
+      await this.onboarding.startVendorOnboarding(message.from);
+      return;
+    }
+
+    if (message.buttonReply?.id === 'help_info') {
+      await this.onboarding.sendHelpInfo(message.from, 'general');
+      return;
     }
 
     // Auto-detect language using Grok AI
