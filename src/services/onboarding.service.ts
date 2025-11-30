@@ -12,31 +12,38 @@ export class OnboardingService {
   async sendWelcomeIntro(phoneNumber: string): Promise<void> {
     await this.whatsapp.sendButtons(
       phoneNumber,
-      `🏘️ *Citi Master* – Your Local Services Partner
+      `👋 *Welcome to Citi Master!*
 
-Premium home services at your doorstep
+🏠 Your trusted home services partner
 
-*Services Available:*
-❄️ AC Repair & Service
-🧹 Deep Cleaning
-🔧 Plumbing Solutions
-⚡ Electrical Work
-🎨 Painting & More
+━━━━━━━━━━━━━━━
+*🔥 Popular Services*
+━━━━━━━━━━━━━━━
 
-*Why Choose Us:*
-✓ Verified professionals
-✓ Transparent pricing
-✓ Same/next day service
-✓ Guaranteed satisfaction
+❄️ AC Service - ₹299 onwards
+🧹 Home Cleaning - ₹399 onwards
+🔧 Plumbing - ₹199 onwards
+⚡ Electrical - ₹249 onwards
+🎨 Painting - ₹149/sqft
 
-📍 *Serving:* Delhi NCR | Jhansi
-⏰ *Available:* 9 AM - 9 PM
+━━━━━━━━━━━━━━━
+*✨ Why 10,000+ Trust Us*
+━━━━━━━━━━━━━━━
 
-*How can we help you today?*`,
+✅ Verified & skilled professionals
+💰 Transparent pricing, no hidden costs
+⚡ Same-day service available
+🛡️ 100% satisfaction guarantee
+⭐ 4.8/5 average rating
+
+📍 *Delhi NCR | Jhansi*
+⏰ *9 AM - 9 PM, 7 days*
+
+*Ready to book?*`,
       [
-        { id: 'customer_book', title: '🛠️ Book Service' },
-        { id: 'vendor_join', title: '👷 Join as Partner' },
-        { id: 'more_info', title: 'ℹ️ Learn More' }
+        { id: 'customer_book', title: '📞 Book Service Now' },
+        { id: 'vendor_join', title: '🤝 Become Partner' },
+        { id: 'more_info', title: '💬 Chat with Us' }
       ]
     );
     

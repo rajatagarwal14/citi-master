@@ -187,9 +187,19 @@ export class ConversationService {
     state.step = 'ADDRESS';
     await this.sessionService.setState(message.from, state);
 
+    const serviceEmoji = {
+      'AC': '❄️',
+      'CLEANING': '🧹',
+      'PLUMBING': '🔧',
+      'ELECTRICAL': '⚡',
+      'PAINTING': '🎨'
+    };
+
+    const emoji = serviceEmoji[state.category as keyof typeof serviceEmoji] || '🛠️';
+
     const text = state.language === 'hi'
-      ? `📍 *कृपया अपना पता भेजें*\n\n✓ House/Flat number\n✓ Area/Locality\n✓ Landmark (optional)\n✓ Pincode\n\n💬 *Example:*\nFlat 301, Tower A\nKarol Bagh, Near Metro\nDelhi 110005`
-      : `📍 *Please share your address*\n\n✓ House/Flat number\n✓ Area/Locality\n✓ Landmark (optional)\n✓ Pincode\n\n💬 *Example:*\nFlat 301, Tower A\nKarol Bagh, Near Metro\nDelhi 110005`;
+      ? `${emoji} *Perfect Choice!*\n\n✅ ${state.category} - ${state.subcategory} selected\n\n📍 *अब अपना पता share करें:*\n\n📝 Format:\nFlat/House No, Building\nArea/Locality\nLandmark (optional)\nPincode\n\n💬 *Example:*\n_Flat 301, Tower A_\n_Karol Bagh_\n_Near Metro Station_\n_Delhi 110005_`
+      : `${emoji} *Perfect Choice!*\n\n✅ ${state.category} - ${state.subcategory} selected\n\n📍 *Now share your address:*\n\n📝 Format:\nFlat/House No, Building\nArea/Locality\nLandmark (optional)\nPincode\n\n💬 *Example:*\n_Flat 301, Tower A_\n_Karol Bagh_\n_Near Metro Station_\n_Delhi 110005_`;
 
     await this.whatsapp.sendText(message.from, text);
   }
@@ -235,9 +245,33 @@ export class ConversationService {
       await this.whatsapp.sendText(
         message.from,
         state.language === 'hi' 
-          ? '😔 अभी कोई vendor नहीं मिला। हम जल्दी contact करेंगे।'
-          : '😔 No vendors available now. We\'ll contact you soon.'
+          ? `📋 *Booking Received!*
+
+✅ हमारी team आपको 15-20 mins में call करेगी
+
+*Details:*
+🛠️ ${state.category} - ${state.subcategory}
+📍 ${state.address?.area || 'Your area'}
+
+💬 Meanwhile, you can call us:
+📞 +91-9999663120
+
+Booking ID: ${state.leadId}`
+          : `📋 *Booking Received!*
+
+✅ Our team will call you in 15-20 mins
+
+*Details:*
+🛠️ ${state.category} - ${state.subcategory}
+📍 ${state.address?.area || 'Your area'}
+
+💬 Meanwhile, you can call us:
+📞 +91-9999663120
+
+Booking ID: ${state.leadId}`
       );
+      state.step = 'START';
+      await this.sessionService.setState(message.from, state);
       return;
     }
 
@@ -304,6 +338,18 @@ export class ConversationService {
       'slot_later': 'Later (you choose)'
     };
     return slotMap[slot] || slot;
+  }
+
+  private getEstimatedPrice(category: string): string {
+    const priceMap: { [key: string]: string } = {
+      'AC': '299',
+      'CLEANING': '399',
+      'PLUMBING': '199',
+      'ELECTRICAL': '249',
+      'PAINTING': '149/sqft',
+      'CARPENTER': '399'
+    };
+    return priceMap[category] || '299';
   }
 
   private async handleConfirm(message: IncomingMessage, state: ConversationState, customer: any): Promise<void> {
