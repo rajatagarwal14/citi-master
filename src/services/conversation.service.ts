@@ -198,15 +198,21 @@ export class ConversationService {
     const addressText = message.text;
     if (!addressText) return;
 
-    // Use Grok AI to parse address
-    const parsedAddress = await this.grokAI.parseAddress(addressText);
+    // Use Grok AI to parse address (with fallback)
+    let parsedAddress: any = {};
+    try {
+      parsedAddress = await this.grokAI.parseAddress(addressText);
+    } catch (error) {
+      logger.error(error, 'Address parsing error - using fallback');
+      parsedAddress = { street: addressText, city: 'Delhi', pincode: '110001' };
+    }
 
     state.address = {
       street: parsedAddress.street || addressText,
-      area: parsedAddress.area,
+      area: parsedAddress.area || 'Not specified',
       city: parsedAddress.city || 'Delhi',
       pincode: parsedAddress.pincode || '110001',
-      landmark: parsedAddress.landmark,
+      landmark: parsedAddress.landmark || '',
       coordinates: { lat: 28.6139, lng: 77.2090 } // TODO: Use geocoding API
     };
 
