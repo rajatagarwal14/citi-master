@@ -14,6 +14,7 @@
     "db:studio": "prisma studio",
     "whatsapp:setup": "tsx scripts/setup-whatsapp.ts",
     "whatsapp:test": "tsx scripts/test-whatsapp.ts",
+    "onboarding:test": "tsx scripts/test-onboarding.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

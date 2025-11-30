@@ -5,16 +5,29 @@ import { prisma } from '../utils/db';
 import { logger } from '../utils/logger';
 import { MatchingService } from './matching.service';
 import { GrokAIService } from './grok-ai.service';
+import { OnboardingService } from './onboarding.service';
 
 export class ConversationService {
   private sessionService = new SessionService();
   private whatsapp = new WhatsAppClient();
   private matchingService = new MatchingService();
   private grokAI = new GrokAIService();
+  private onboarding = new OnboardingService();
 
   async handleMessage(message: IncomingMessage): Promise<void> {
     const state = await this.sessionService.getState(message.from);
     const customer = await this.getOrCreateCustomer(message.from);
+
+    // Check if first-time user with greeting
+    if (message.text && state.step === 'START' && !customer.name) {
+      const greetings = ['hi', 'hello', 'hey', 'start', 'book', 'partner', 'help'];
+      const isGreeting = greetings.some(g => message.text!.toLowerCase().includes(g));
+      
+      if (isGreeting) {
+        await this.onboarding.handleFirstContact(message.from, message.text);
+        return;
+      }
+    }
 
     // Auto-detect language using Grok AI
     if (message.text && !state.language) {
