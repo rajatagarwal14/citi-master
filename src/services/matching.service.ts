@@ -15,10 +15,12 @@ export class MatchingService {
 
     const matches: VendorMatch[] = vendors.map(vendor => {
       const score = this.calculateScore(vendor, lead);
-      const distance = this.calculateDistance(
-        lead.address.coordinates,
-        vendor.location.coordinates
-      );
+      
+      // Safely handle vendor.location
+      const vendorLoc = vendor.location as any;
+      const distance = vendorLoc?.coordinates 
+        ? this.calculateDistance(lead.address.coordinates, vendorLoc.coordinates)
+        : 999999;
 
       return {
         vendorId: vendor.id,
@@ -38,10 +40,10 @@ export class MatchingService {
 
   private calculateScore(vendor: any, lead: any): number {
     // Distance score (0-100)
-    const distance = this.calculateDistance(
-      lead.address.coordinates,
-      vendor.location.coordinates
-    );
+    const vendorLoc = vendor.location as any;
+    const distance = vendorLoc?.coordinates
+      ? this.calculateDistance(lead.address.coordinates, vendorLoc.coordinates)
+      : 999999;
     const proximityScore = Math.max(0, 100 - (distance * 10)); // 10km = 0 score
 
     // Rating score (0-100)

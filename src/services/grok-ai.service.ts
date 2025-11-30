@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { config } from '../config';
-import { logger } from './logger';
+import { logger } from '../utils/logger';
 
 export class GrokAIService {
   private client: OpenAI;

@@ -68,7 +68,7 @@ export class ConversationService {
         phoneNumber: message.from,
         direction: 'INBOUND',
         messageType: message.type,
-        content: message,
+        content: message as any,
         waMessageId: message.messageId,
         customerId: customer.id,
       }
