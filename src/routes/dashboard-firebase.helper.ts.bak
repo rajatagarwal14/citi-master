@@ -62,16 +62,9 @@ export async function getRecentLeads(limit = 10) {
       return {
         id: doc.id,
         customerPhone: data?.customerPhone || data?.phoneNumber || 'N/A',
-        service: (() => {
-          const subcategory = data?.subcategory || '';
-          const displaySubcategory = subcategory === 'vendor_start' ? 'Service Requested' : subcategory;
-          return `${data?.category || 'Unknown'}${displaySubcategory ? ' - ' + displaySubcategory : ''}`;
-        })(),
+        service: `${data?.category || 'Unknown'} - ${data?.subcategory || ''}`,
         category: data?.category || 'Unknown',
-        subcategory: (() => {
-          const subcategory = data?.subcategory || '';
-          return subcategory === 'vendor_start' ? 'Service Requested' : subcategory;
-        })(),
+        subcategory: data?.subcategory || '',
         status: data?.status || 'PENDING',
         address: data?.address?.area || data?.address?.city || 'N/A',
         createdAt: data?.createdAt || new Date().toISOString(),
