@@ -1,7 +1,7 @@
 import { IncomingMessage, ConversationState, CATEGORIES, SUBCATEGORIES } from '../types';
 import { SessionService } from './session.service';
 import { WhatsAppClient } from '../utils/whatsapp-client';
-import { prisma } from '../utils/db';
+import { firebaseDb } from '../utils/firebase-db';
 import { logger } from '../utils/logger';
 import { MatchingService } from './matching.service';
 import { GrokAIService } from './grok-ai.service';
@@ -63,7 +63,7 @@ export class ConversationService {
     }
 
     // Log message
-    await prisma.messageLog.create({
+    await firebaseDb.logMessage({
       data: {
         phoneNumber: message.from,
         direction: 'INBOUND',
@@ -196,7 +196,7 @@ export class ConversationService {
     };
 
     // Create lead
-    const lead = await prisma.lead.create({
+    const lead = await firebaseDb.createLead({
       data: {
         customerId: customer.id,
         category: state.category!,
@@ -297,17 +297,15 @@ export class ConversationService {
       await this.whatsapp.sendText(message.from, text);
 
       // Assign to best vendor (simplified)
-      const lead = await prisma.lead.findUnique({ where: { id: state.leadId } });
+      const lead = state.leadId ? await firebaseDb.getLead(state.leadId) : null;
       if (lead) {
         const matches = await this.matchingService.findMatches(lead);
         if (matches.length > 0) {
-          await prisma.assignment.create({
-            data: {
-              leadId: lead.id,
-              vendorId: matches[0].vendorId,
-              matchScore: matches[0].score,
-              status: 'PENDING'
-            }
+          await firebaseDb.createAssignment({
+            leadId: lead.id,
+            vendorId: matches[0].vendorId,
+            matchScore: matches[0].score,
+            status: 'PENDING'
           });
         }
       }
@@ -321,14 +319,10 @@ export class ConversationService {
   }
 
   private async getOrCreateCustomer(phoneNumber: string) {
-    let customer = await prisma.customer.findUnique({
-      where: { phoneNumber }
-    });
+    let customer = await firebaseDb.getCustomer(phoneNumber);
 
     if (!customer) {
-      customer = await prisma.customer.create({
-        data: { phoneNumber }
-      });
+      customer = await firebaseDb.createCustomer({ phoneNumber });
       logger.info({ phoneNumber }, 'New customer created');
     }
 

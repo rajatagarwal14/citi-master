@@ -10,11 +10,15 @@ const envSchema = z.object({
   VERIFY_TOKEN: z.string().min(1),
   WHATSAPP_API_VERSION: z.string().default('v22.0'),
 
-  // Database
-  DATABASE_URL: z.string().url(),
+  // Database (optional - using Firebase instead)
+  DATABASE_URL: z.string().url().optional(),
 
-  // Redis
-  REDIS_URL: z.string().url(),
+  // Redis (optional - using in-memory sessions)
+  REDIS_URL: z.string().url().optional(),
+
+  // Firebase
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
 
   // Server
   PORT: z.string().transform(Number).default('3000'),
@@ -49,6 +53,10 @@ export const config = {
   },
   redis: {
     url: env.REDIS_URL,
+  },
+  firebase: {
+    projectId: env.FIREBASE_PROJECT_ID,
+    serviceAccount: env.FIREBASE_SERVICE_ACCOUNT,
   },
   grok: {
     apiKey: env.GROK_API_KEY || '',

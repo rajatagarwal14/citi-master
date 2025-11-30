@@ -3,7 +3,7 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { webhookRouter } from './routes/webhook';
 import { dashboardRouter } from './routes/dashboard';
-import { prisma } from './utils/db';
+// Database removed - using Firebase
 import { redis } from './utils/redis';
 
 const app = express();
@@ -15,8 +15,8 @@ app.use(express.urlencoded({ extended: true }));
 // Health check
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    await redis.ping();
+    // Firebase health check skipped
+    // Redis replaced with in-memory cache
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
@@ -58,7 +58,7 @@ app.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, closing gracefully...');
-  await prisma.$disconnect();
-  await redis.quit();
+  // Database disconnection removed
+  // Redis cache cleanup skipped
   process.exit(0);
 });

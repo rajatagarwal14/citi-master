@@ -1,17 +1,13 @@
-import { prisma } from '../utils/db';
+import { firebaseDb } from '../utils/firebase-db';
 import { VendorMatch } from '../types';
 import { config } from '../config';
 
 export class MatchingService {
   async findMatches(lead: any): Promise<VendorMatch[]> {
-    const vendors = await prisma.vendor.findMany({
-      where: {
-        categories: { has: lead.category },
-        subcategories: { has: lead.subcategory },
-        serviceAreas: { has: lead.address.pincode },
-        isActive: true,
-      }
-    });
+    const vendors = await firebaseDb.findAvailableVendors(
+      lead.category,
+      lead.address?.pincode || ''
+    );
 
     const matches: VendorMatch[] = vendors.map(vendor => {
       const score = this.calculateScore(vendor, lead);

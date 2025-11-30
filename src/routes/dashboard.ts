@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../utils/db';
+// Removed Prisma - using Firebase
 import { redis } from '../utils/redis';
 
 export const dashboardRouter = Router();
 
 // Basic auth middleware
+import { getDashboardStats, getRecentLeads, getRecentVendors, getActivityByDay } from './dashboard-firebase.helper';
+
 const authenticate = (req: Request, res: Response, next: any) => {
   const authHeader = req.headers.authorization;
   const credentials = authHeader?.split(' ')[1];
@@ -268,74 +270,24 @@ dashboardRouter.get('/', authenticate, (req: Request, res: Response) => {
 
 // API: Stats
 dashboardRouter.get('/api/stats', authenticate, async (req: Request, res: Response) => {
-  const [
-    totalMessages,
-    activeLeads,
-    completedToday,
-    activeVendors,
-    revenueToday,
-  ] = await Promise.all([
-    prisma.messageLog.count(),
-    prisma.lead.count({ where: { status: { in: ['PENDING', 'ASSIGNED', 'ACCEPTED'] } } }),
-    prisma.lead.count({ 
-      where: { 
-        status: 'COMPLETED',
-        updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-      } 
-    }),
-    prisma.vendor.count({ where: { isActive: true } }),
-    prisma.payment.aggregate({
-      where: {
-        status: 'SUCCESS',
-        paidAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-      },
-      _sum: { commission: true }
-    }),
-  ]);
-
-  res.json({
-    totalMessages,
-    activeLeads,
-    completedToday,
-    activeVendors,
-    revenueToday: revenueToday._sum.commission || 0,
-    avgResponseTime: 2.3, // TODO: Calculate from Redis/logs
-  });
+  const stats = await getDashboardStats();
+  res.json(stats);
 });
 
 // API: Recent leads
 dashboardRouter.get('/api/leads', authenticate, async (req: Request, res: Response) => {
-  const leads = await prisma.lead.findMany({
-    take: 10,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      customer: { select: { phoneNumber: true, name: true } }
-    }
-  });
+  const leads = await getRecentLeads(10);
   res.json(leads);
 });
 
 // API: Top vendors
 dashboardRouter.get('/api/vendors', authenticate, async (req: Request, res: Response) => {
-  const vendors = await prisma.vendor.findMany({
-    take: 10,
-    orderBy: { rating: 'desc' },
-    include: {
-      _count: { select: { assignments: true } }
-    }
-  });
+  const vendors = await getRecentVendors(10);
   res.json(vendors);
 });
 
 // API: Activity timeline
 dashboardRouter.get('/api/activity', authenticate, async (req: Request, res: Response) => {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  
-  const activity = await prisma.lead.groupBy({
-    by: ['createdAt'],
-    where: { createdAt: { gte: sevenDaysAgo } },
-    _count: true,
-  });
-  
+  const activity = await getActivityByDay();
   res.json(activity);
 });

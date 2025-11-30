@@ -1,5 +1,5 @@
 import { WhatsAppClient } from '../utils/whatsapp-client';
-import { prisma } from '../utils/db';
+import { firebaseDb } from '../utils/firebase-db';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 
@@ -48,9 +48,7 @@ Premium home services at your doorstep
    */
   async startCustomerOnboarding(phoneNumber: string): Promise<void> {
     // Check if already registered
-    let customer = await prisma.customer.findUnique({
-      where: { phoneNumber }
-    });
+    let customer = await firebaseDb.getCustomer(phoneNumber);
 
     if (customer && customer.name) {
       // Returning customer - show services directly
@@ -60,9 +58,7 @@ Premium home services at your doorstep
 
     // New customer - show services immediately (no name collection for now)
     if (!customer) {
-      await prisma.customer.create({
-        data: { phoneNumber }
-      });
+      await firebaseDb.createCustomer({ phoneNumber });
     }
 
     await this.sendServiceCategories(phoneNumber);
@@ -72,9 +68,7 @@ Premium home services at your doorstep
    * Complete vendor onboarding flow
    */
   async startVendorOnboarding(phoneNumber: string): Promise<void> {
-    const existingVendor = await prisma.vendor.findUnique({
-      where: { phoneNumber }
-    });
+    const existingVendor = await firebaseDb.getVendor(phoneNumber);
 
     if (existingVendor) {
       await this.whatsapp.sendText(
