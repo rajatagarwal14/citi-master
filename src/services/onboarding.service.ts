@@ -121,23 +121,28 @@ Reply *START* to begin registration`;
   async sendServiceCategories(phoneNumber: string): Promise<void> {
     await this.whatsapp.sendList(
       phoneNumber,
-      '🛠️ What service do you need?',
-      'Select Service',
+      `🏘️ *Choose Your Service*
+
+✓ Verified professionals
+✓ Transparent pricing
+✓ Same-day service available
+✓ 100% satisfaction guarantee`,
+      'Browse Services',
       [
         {
-          title: 'Popular Services',
+          title: '⭐ Most Popular',
           rows: [
-            { id: 'cat_AC', title: '❄️ AC Service', description: 'Repair, Install, Service' },
-            { id: 'cat_CLEANING', title: '🧹 Cleaning', description: 'Deep clean, Regular, Kitchen' },
-            { id: 'cat_PLUMBING', title: '🔧 Plumbing', description: 'Leak, Pipe, Bathroom' },
+            { id: 'cat_AC', title: '❄️ AC Repair & Service', description: '₹299 • Install • Gas Fill • Deep Clean' },
+            { id: 'cat_CLEANING', title: '🧹 Home Cleaning', description: '₹399 • Kitchen • Bathroom • Full House' },
+            { id: 'cat_PLUMBING', title: '🔧 Plumbing Solutions', description: '₹199 • Leaks • Pipes • Fittings' },
           ]
         },
         {
-          title: 'More Services',
+          title: '🔥 In Demand',
           rows: [
-            { id: 'cat_ELECTRICAL', title: '⚡ Electrical', description: 'Wiring, Switch, MCB' },
-            { id: 'cat_PAINTING', title: '🎨 Painting', description: 'Interior, Exterior, Touch-up' },
-            { id: 'cat_CARPENTER', title: '🪚 Carpentry', description: 'Furniture, Repair, Polish' },
+            { id: 'cat_ELECTRICAL', title: '⚡ Electrical Work', description: '₹249 • Wiring • Fans • Switches' },
+            { id: 'cat_PAINTING', title: '🎨 Painting Services', description: '₹149/sqft • Interior • Exterior • Waterproof' },
+            { id: 'cat_CARPENTER', title: '🪚 Carpentry', description: '₹399 • Furniture • Doors • Repairs' },
           ]
         }
       ]

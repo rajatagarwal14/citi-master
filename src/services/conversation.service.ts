@@ -144,7 +144,7 @@ export class ConversationService {
                        message.text?.toUpperCase();
 
     if (!categoryId || !(categoryId in CATEGORIES)) {
-      await this.whatsapp.sendText(message.from, 'Please select a category');
+      await this.whatsapp.sendText(message.from, '❌ Please select a valid category from the list');
       return;
     }
 
@@ -152,16 +152,33 @@ export class ConversationService {
     state.step = 'SUBCATEGORY';
     await this.sessionService.setState(message.from, state);
 
-    const text = state.language === 'hi' ? 'कौनसा काम?' : 'What work?';
+    const categoryDetails = {
+      'AC': { emoji: '❄️', name: 'AC Service', services: [
+        { id: 'sub_REPAIR', title: '🔧 Repair', desc: 'Not cooling, noise, leaks' },
+        { id: 'sub_INSTALL', title: '📦 Installation', desc: 'New AC setup & fitting' },
+        { id: 'sub_SERVICE', title: '🧼 Service & Clean', desc: 'Gas fill, deep clean' }
+      ]},
+      'CLEANING': { emoji: '🧹', name: 'Cleaning', services: [
+        { id: 'sub_DEEP', title: '💎 Deep Cleaning', desc: 'Kitchen, bathroom, full' },
+        { id: 'sub_REGULAR', title: '✨ Regular Cleaning', desc: 'Daily/weekly service' },
+        { id: 'sub_SOFA', title: '🛋️ Sofa/Carpet', desc: 'Upholstery cleaning' }
+      ]},
+      'PLUMBING': { emoji: '🔧', name: 'Plumbing', services: [
+        { id: 'sub_LEAK', title: '💧 Fix Leaks', desc: 'Taps, pipes, tanks' },
+        { id: 'sub_INSTALL', title: '🚰 Installation', desc: 'Taps, basin, toilet' },
+        { id: 'sub_BLOCKAGE', title: '🚫 Clear Blockage', desc: 'Drain, sink, toilet' }
+      ]}
+    };
+
+    const category = categoryDetails[categoryId as keyof typeof categoryDetails] || categoryDetails['AC'];
+    const text = state.language === 'hi' 
+      ? `${category.emoji} *${category.name}*\n\nकौनसी सर्विस चाहिए?`
+      : `${category.emoji} *${category.name}*\n\nWhat do you need?`;
     
     await this.whatsapp.sendButtons(
       message.from,
       text,
-      [
-        { id: 'sub_REPAIR', title: 'Repair' },
-        { id: 'sub_INSTALL', title: 'Installation' },
-        { id: 'sub_SERVICE', title: 'Service' }
-      ]
+      category.services.map((s: any) => ({ id: s.id, title: s.title }))
     );
   }
 
@@ -171,8 +188,8 @@ export class ConversationService {
     await this.sessionService.setState(message.from, state);
 
     const text = state.language === 'hi'
-      ? '📍 अपना पता भेजें\n\nExample: Karol Bagh, Delhi 110005'
-      : '📍 Send your address\n\nExample: Karol Bagh, Delhi 110005';
+      ? `📍 *कृपया अपना पता भेजें*\n\n✓ House/Flat number\n✓ Area/Locality\n✓ Landmark (optional)\n✓ Pincode\n\n💬 *Example:*\nFlat 301, Tower A\nKarol Bagh, Near Metro\nDelhi 110005`
+      : `📍 *Please share your address*\n\n✓ House/Flat number\n✓ Area/Locality\n✓ Landmark (optional)\n✓ Pincode\n\n💬 *Example:*\nFlat 301, Tower A\nKarol Bagh, Near Metro\nDelhi 110005`;
 
     await this.whatsapp.sendText(message.from, text);
   }
@@ -219,20 +236,18 @@ export class ConversationService {
     }
 
     const text = state.language === 'hi'
-      ? `✅ ${matches.length} vendors मिले!\n\n📅 कब चाहिए service?\n\nOr type specific date & time\n(Example: Tomorrow 2 PM)`
-      : `✅ Found ${matches.length} vendors!\n\n📅 When do you need service?\n\nOr type specific date & time\n(Example: Dec 1, 10 AM)`;
-
+      ? `✅ *बढ़िया!* ${matches.length} verified professionals मिले\n\n📅 *कब चाहिए service?*\n\n⚡ Same-day available\n🕐 Flexible timing\n\n💬 या specific date/time लिखें\n_Example: Tomorrow 3 PM_`
+      : `✅ *Great!* ${matches.length} verified professionals found\n\n📅 *When do you need service?*\n\n⚡ Same-day available\n🕐 Flexible timing\n\n💬 Or type specific date/time\n_Example: Tomorrow 3 PM_`;
+    
     await this.whatsapp.sendButtons(
       message.from,
       text,
       [
-        { id: 'slot_today', title: '🔥 Today' },
+        { id: 'slot_today', title: '🔥 Today (2-3 hrs)' },
         { id: 'slot_tomorrow', title: '📅 Tomorrow' },
         { id: 'slot_later', title: '⏰ Choose Time' }
       ]
-    );
-
-    state.step = 'SLOT';
+    );    state.step = 'SLOT';
     await this.sessionService.setState(message.from, state);
   }
 
@@ -288,8 +303,8 @@ export class ConversationService {
   private async handleConfirm(message: IncomingMessage, state: ConversationState, customer: any): Promise<void> {
     if (message.buttonReply?.id === 'confirm_yes') {
       const text = state.language === 'hi'
-        ? '🎉 Done! Vendor आपको 10 min में call करेगा।\n\nBooking ID: ' + state.leadId
-        : '🎉 Done! Vendor will call you in 10 mins.\n\nBooking ID: ' + state.leadId;
+        ? `🎉 *बुकिंग Confirm!*\n\n✅ Professional आपको 10-15 min में call करेगा\n📞 Contact करने के लिए ready रहें\n\n*Booking Details:*\n📋 ID: ${state.leadId}\n🛠️ Service: ${state.category} - ${state.subcategory}\n📍 Area: ${state.address?.area || 'Your location'}\n⏰ Time: ${this.formatSlot(state.slot!)}\n\n_हम आपकी सेवा के लिए तत्पर हैं! 🙏_`
+        : `🎉 *Booking Confirmed!*\n\n✅ Professional will call you in 10-15 mins\n📞 Please keep your phone ready\n\n*Booking Details:*\n📋 ID: ${state.leadId}\n🛠️ Service: ${state.category} - ${state.subcategory}\n📍 Area: ${state.address?.area || 'Your location'}\n⏰ Time: ${this.formatSlot(state.slot!)}\n\n_Thank you for choosing Citi Master! 🙏_`;
 
       await this.whatsapp.sendText(message.from, text);
 
