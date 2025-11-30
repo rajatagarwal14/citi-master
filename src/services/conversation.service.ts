@@ -64,14 +64,12 @@ export class ConversationService {
 
     // Log message
     await firebaseDb.logMessage({
-      data: {
-        phoneNumber: message.from,
-        direction: 'INBOUND',
-        messageType: message.type,
-        content: message as any,
-        waMessageId: message.messageId,
-        customerId: customer.id,
-      }
+      phoneNumber: message.from,
+      direction: 'INBOUND',
+      messageType: message.type,
+      content: message as any,
+      waMessageId: message.messageId,
+      customerId: customer.id,
     });
 
     // Handle based on current state
@@ -197,13 +195,12 @@ export class ConversationService {
 
     // Create lead
     const lead = await firebaseDb.createLead({
-      data: {
-        customerId: customer.id,
-        category: state.category!,
-        subcategory: state.subcategory!,
-        address: state.address,
-        status: 'PENDING'
-      }
+      customerId: customer.id,
+      category: state.category!,
+      subcategory: state.subcategory!,
+      address: state.address,
+      status: 'PENDING',
+      customerPhone: customer.phoneNumber || message.from
     });
 
     state.leadId = lead.id;
