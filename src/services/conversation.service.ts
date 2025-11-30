@@ -4,15 +4,23 @@ import { WhatsAppClient } from '../utils/whatsapp-client';
 import { prisma } from '../utils/db';
 import { logger } from '../utils/logger';
 import { MatchingService } from './matching.service';
+import { GrokAIService } from './grok-ai.service';
 
 export class ConversationService {
   private sessionService = new SessionService();
   private whatsapp = new WhatsAppClient();
   private matchingService = new MatchingService();
+  private grokAI = new GrokAIService();
 
   async handleMessage(message: IncomingMessage): Promise<void> {
     const state = await this.sessionService.getState(message.from);
     const customer = await this.getOrCreateCustomer(message.from);
+
+    // Auto-detect language using Grok AI
+    if (message.text && !state.language) {
+      state.language = await this.grokAI.detectLanguage(message.text);
+      await this.sessionService.setState(message.from, state);
+    }
 
     // Log message
     await prisma.messageLog.create({
@@ -52,6 +60,29 @@ export class ConversationService {
   }
 
   private async handleStart(message: IncomingMessage, state: ConversationState): Promise<void> {
+    // Use Grok AI to understand free-form requests
+    if (message.text) {
+      const intent = await this.grokAI.parseIntent(message.text);
+      
+      if (intent.intent === 'SERVICE_REQUEST' && intent.category && intent.confidence > 0.7) {
+        // Skip category selection if AI detected it
+        state.category = intent.category;
+        state.subcategory = intent.subcategory;
+        state.step = intent.subcategory ? 'ADDRESS' : 'SUBCATEGORY';
+        await this.sessionService.setState(message.from, state);
+        
+        if (intent.subcategory) {
+          const text = state.language === 'hi'
+            ? '📍 अपना पता भेजें\n\nExample: Karol Bagh, Delhi 110005'
+            : '📍 Send your address\n\nExample: Karol Bagh, Delhi 110005';
+          await this.whatsapp.sendText(message.from, text);
+        } else {
+          await this.handleCategory(message, state);
+        }
+        return;
+      }
+    }
+
     const greeting = state.language === 'hi' 
       ? '🙏 नमस्ते! मैं Citi Master हूं।\n\nकौनसी सर्विस चाहिए?'
       : '👋 Hi! I\'m Citi Master.\n\nWhat service do you need?';
@@ -112,12 +143,16 @@ export class ConversationService {
     const addressText = message.text;
     if (!addressText) return;
 
-    // Parse address (simplified - in production use geocoding API)
+    // Use Grok AI to parse address
+    const parsedAddress = await this.grokAI.parseAddress(addressText);
+
     state.address = {
-      street: addressText,
-      city: 'Delhi',
-      pincode: '110001',
-      coordinates: { lat: 28.6139, lng: 77.2090 }
+      street: parsedAddress.street || addressText,
+      area: parsedAddress.area,
+      city: parsedAddress.city || 'Delhi',
+      pincode: parsedAddress.pincode || '110001',
+      landmark: parsedAddress.landmark,
+      coordinates: { lat: 28.6139, lng: 77.2090 } // TODO: Use geocoding API
     };
 
     // Create lead

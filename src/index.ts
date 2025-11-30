@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { config } from './config';
 import { logger } from './utils/logger';
 import { webhookRouter } from './routes/webhook';
+import { dashboardRouter } from './routes/dashboard';
 import { prisma } from './utils/db';
 import { redis } from './utils/redis';
 
@@ -32,6 +33,9 @@ app.get('/health', async (req: Request, res: Response) => {
 
 // WhatsApp webhook routes
 app.use('/webhook', webhookRouter);
+
+// Dashboard routes
+app.use('/dashboard', dashboardRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

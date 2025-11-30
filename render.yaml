@@ -1,0 +1,19 @@
+{
+  "name": "citi-master",
+  "build": {
+    "builder": "V2"
+  },
+  "run": {
+    "install": [
+      "npm install",
+      "npx prisma generate"
+    ],
+    "build": [
+      "npm run build"
+    ],
+    "start": "node dist/index.js"
+  },
+  "deploy": {
+    "restart": "on-failure"
+  }
+}

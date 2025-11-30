@@ -1,0 +1,341 @@
+import { Router, Request, Response } from 'express';
+import { prisma } from '../utils/db';
+import { redis } from '../utils/redis';
+
+export const dashboardRouter = Router();
+
+// Basic auth middleware
+const authenticate = (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers.authorization;
+  const credentials = authHeader?.split(' ')[1];
+  
+  if (credentials) {
+    const [username, password] = Buffer.from(credentials, 'base64').toString().split(':');
+    if (username === 'admin' && password === process.env.ADMIN_PASSWORD) {
+      return next();
+    }
+  }
+  
+  res.setHeader('WWW-Authenticate', 'Basic realm="Dashboard"');
+  res.status(401).send('Authentication required');
+};
+
+// Dashboard home
+dashboardRouter.get('/', authenticate, (req: Request, res: Response) => {
+  res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Citi Master - Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #2d3748;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+    .stats-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-left: 4px solid #667eea;
+    }
+    .stat-card.green { border-left-color: #48bb78; }
+    .stat-card.blue { border-left-color: #4299e1; }
+    .stat-card.orange { border-left-color: #ed8936; }
+    .stat-card.purple { border-left-color: #9f7aea; }
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin: 0.5rem 0;
+    }
+    .stat-label {
+      color: #718096;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .chart-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    .chart-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    th {
+      background: #f7fafc;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 1rem;
+      border-top: 1px solid #e2e8f0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge.success { background: #c6f6d5; color: #22543d; }
+    .badge.warning { background: #feebc8; color: #7c2d12; }
+    .badge.danger { background: #fed7d7; color: #742a2a; }
+    .badge.info { background: #bee3f8; color: #2c5282; }
+    .refresh-btn {
+      background: white;
+      color: #667eea;
+      border: 2px solid white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      float: right;
+    }
+    .refresh-btn:hover { background: rgba(255,255,255,0.9); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="container">
+      <h1>🏘️ Citi Master Dashboard</h1>
+      <p>Real-time monitoring & analytics</p>
+      <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
+    </div>
+  </div>
+  
+  <div class="container">
+    <div class="stats-grid" id="stats"></div>
+    
+    <div class="chart-container">
+      <h2 class="chart-title">📊 Activity Timeline (Last 7 Days)</h2>
+      <canvas id="activityChart" style="max-height: 300px;"></canvas>
+    </div>
+    
+    <div class="chart-container">
+      <h2 class="chart-title">🔥 Recent Leads</h2>
+      <table id="leadsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Category</th>
+            <th>Subcategory</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    
+    <div class="chart-container">
+      <h2 class="chart-title">👥 Top Vendors</h2>
+      <table id="vendorsTable">
+        <thead>
+          <tr>
+            <th>Business Name</th>
+            <th>Rating</th>
+            <th>Assignments</th>
+            <th>Acceptance Rate</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  
+  <script>
+    // Fetch and display stats
+    async function loadDashboard() {
+      const stats = await fetch('/dashboard/api/stats').then(r => r.json());
+      const leads = await fetch('/dashboard/api/leads').then(r => r.json());
+      const vendors = await fetch('/dashboard/api/vendors').then(r => r.json());
+      const activity = await fetch('/dashboard/api/activity').then(r => r.json());
+      
+      // Render stats
+      document.getElementById('stats').innerHTML = \`
+        <div class="stat-card green">
+          <div class="stat-label">Total Messages</div>
+          <div class="stat-value">\${stats.totalMessages.toLocaleString()}</div>
+          <div>📱 All conversations</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Active Leads</div>
+          <div class="stat-value">\${stats.activeLeads}</div>
+          <div>📋 In progress</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Completed Today</div>
+          <div class="stat-value">\${stats.completedToday}</div>
+          <div>✅ Bookings done</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Avg Response Time</div>
+          <div class="stat-value">\${stats.avgResponseTime}s</div>
+          <div>⚡ Bot speed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Vendors</div>
+          <div class="stat-value">\${stats.activeVendors}</div>
+          <div>👷 Online now</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Revenue (Today)</div>
+          <div class="stat-value">₹\${stats.revenueToday.toLocaleString()}</div>
+          <div>💰 Earnings</div>
+        </div>
+      \`;
+      
+      // Render leads table
+      const leadsHtml = leads.map(l => \`
+        <tr>
+          <td>#\${l.id.slice(0, 8)}</td>
+          <td>\${l.customer.phoneNumber}</td>
+          <td>\${l.category}</td>
+          <td>\${l.subcategory}</td>
+          <td><span class="badge \${getBadgeClass(l.status)}">\${l.status}</span></td>
+          <td>\${new Date(l.createdAt).toLocaleString()}</td>
+        </tr>
+      \`).join('');
+      document.querySelector('#leadsTable tbody').innerHTML = leadsHtml;
+      
+      // Render vendors table
+      const vendorsHtml = vendors.map(v => \`
+        <tr>
+          <td>\${v.businessName}</td>
+          <td>⭐ \${v.rating.toFixed(1)} (\${v.totalRatings})</td>
+          <td>\${v._count.assignments}</td>
+          <td>\${(v.acceptanceRate * 100).toFixed(0)}%</td>
+          <td><span class="badge \${v.isActive ? 'success' : 'danger'}">\${v.isActive ? 'Active' : 'Inactive'}</span></td>
+        </tr>
+      \`).join('');
+      document.querySelector('#vendorsTable tbody').innerHTML = vendorsHtml;
+    }
+    
+    function getBadgeClass(status) {
+      const map = {
+        PENDING: 'warning',
+        ASSIGNED: 'info',
+        ACCEPTED: 'info',
+        COMPLETED: 'success',
+        CANCELLED: 'danger'
+      };
+      return map[status] || 'info';
+    }
+    
+    loadDashboard();
+    setInterval(loadDashboard, 30000); // Refresh every 30s
+  </script>
+</body>
+</html>
+  `);
+});
+
+// API: Stats
+dashboardRouter.get('/api/stats', authenticate, async (req: Request, res: Response) => {
+  const [
+    totalMessages,
+    activeLeads,
+    completedToday,
+    activeVendors,
+    revenueToday,
+  ] = await Promise.all([
+    prisma.messageLog.count(),
+    prisma.lead.count({ where: { status: { in: ['PENDING', 'ASSIGNED', 'ACCEPTED'] } } }),
+    prisma.lead.count({ 
+      where: { 
+        status: 'COMPLETED',
+        updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+      } 
+    }),
+    prisma.vendor.count({ where: { isActive: true } }),
+    prisma.payment.aggregate({
+      where: {
+        status: 'SUCCESS',
+        paidAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+      },
+      _sum: { commission: true }
+    }),
+  ]);
+
+  res.json({
+    totalMessages,
+    activeLeads,
+    completedToday,
+    activeVendors,
+    revenueToday: revenueToday._sum.commission || 0,
+    avgResponseTime: 2.3, // TODO: Calculate from Redis/logs
+  });
+});
+
+// API: Recent leads
+dashboardRouter.get('/api/leads', authenticate, async (req: Request, res: Response) => {
+  const leads = await prisma.lead.findMany({
+    take: 10,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      customer: { select: { phoneNumber: true, name: true } }
+    }
+  });
+  res.json(leads);
+});
+
+// API: Top vendors
+dashboardRouter.get('/api/vendors', authenticate, async (req: Request, res: Response) => {
+  const vendors = await prisma.vendor.findMany({
+    take: 10,
+    orderBy: { rating: 'desc' },
+    include: {
+      _count: { select: { assignments: true } }
+    }
+  });
+  res.json(vendors);
+});
+
+// API: Activity timeline
+dashboardRouter.get('/api/activity', authenticate, async (req: Request, res: Response) => {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  
+  const activity = await prisma.lead.groupBy({
+    by: ['createdAt'],
+    where: { createdAt: { gte: sevenDaysAgo } },
+    _count: true,
+  });
+  
+  res.json(activity);
+});

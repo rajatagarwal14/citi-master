@@ -20,6 +20,12 @@ const envSchema = z.object({
   PORT: z.string().transform(Number).default('3000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
+  // Grok AI
+  GROK_API_KEY: z.string().optional(),
+
+  // Admin
+  ADMIN_PASSWORD: z.string().default('admin123'),
+
   // Business
   SESSION_TTL: z.string().transform(Number).default('172800'),
   RATE_LIMIT_WINDOW: z.string().transform(Number).default('60000'),
@@ -43,6 +49,9 @@ export const config = {
   },
   redis: {
     url: env.REDIS_URL,
+  },
+  grok: {
+    apiKey: env.GROK_API_KEY || '',
   },
   port: env.PORT,
   nodeEnv: env.NODE_ENV,

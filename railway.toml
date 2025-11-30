@@ -1,0 +1,15 @@
+# Railway Deployment Configuration
+# https://railway.app
+
+# Build
+[build]
+builder = "NIXPACKS"
+
+# Health check
+[healthcheck]
+path = "/health"
+interval = 30
+
+# Environment
+[env]
+NODE_ENV = "production"
