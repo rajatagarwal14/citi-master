@@ -48,10 +48,10 @@ Reply with:
       return;
     }
 
-    // New customer - ask for name
+    // New customer - start registration
     await this.whatsapp.sendText(
       phoneNumber,
-      `👋 Hi! I'm your Citi Master assistant.\n\nTo get started, what's your name?`
+      `👋 Hi! Welcome to Citi Master!\n\n📝 Quick Registration (2 steps):\n\n1️⃣ What's your name?`
     );
 
     // Create pending customer record
@@ -184,7 +184,7 @@ Reply *START* to begin registration`;
     if (userType === 'customer' || userType === 'general') {
       helpMsg += `📱 *For Customers:*
 
-🔹 Type "BOOK" to start booking
+🔹 Reply "BOOK" to start booking
 🔹 We connect you with verified local vendors
 🔹 Transparent pricing
 🔹 Quick service (same day/next day)
@@ -193,12 +193,13 @@ Reply *START* to begin registration`;
 
 💡 *How it works:*
 1. Tell us your need (AC repair, cleaning, etc)
-2. Share your address
-3. Choose preferred time slot
-4. Get 3 best vendor matches
-5. Confirm booking
-6. Vendor arrives at scheduled time
-7. Pay after job done
+2. Select subcategory (repair, installation, etc)
+3. Share your full address with pincode
+4. Choose preferred date & time slot
+5. Get 3 best vendor matches
+6. Confirm booking
+7. Vendor arrives at scheduled time
+8. Pay after job done
 
 `;
     }
@@ -224,12 +225,11 @@ Reply *START* to begin registration`;
     }
 
     helpMsg += `\n📞 *Support:*
-WhatsApp: +${config.whatsapp.phoneNumberId}
+Reply to this chat for assistance
 Hours: 9 AM - 9 PM (Mon-Sat)
 
 🌐 *Service Areas:*
-Currently serving Delhi NCR
-Expanding to more cities soon!`;
+Delhi NCR | Jhansi | Expanding to more cities soon!`;
 
     await this.whatsapp.sendText(phoneNumber, helpMsg);
   }

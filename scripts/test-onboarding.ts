@@ -36,7 +36,7 @@ Reply with:
   console.log('2️⃣  Sending customer onboarding flow...');
   await whatsapp.sendText(
     phoneNumber,
-    `👋 Hi! I'm your Citi Master assistant.\n\nTo get started, what's your name?`
+    `👋 Hi! Welcome to Citi Master!\n\n📝 Quick Registration (2 steps):\n\n1️⃣ What's your name?`
   );
   console.log('✅ Customer onboarding started\n');
 
@@ -123,12 +123,13 @@ Reply *START* to begin registration`,
 
 💡 *How it works:*
 1. Tell us your need (AC repair, cleaning, etc)
-2. Share your address
-3. Choose preferred time slot
-4. Get 3 best vendor matches
-5. Confirm booking
-6. Vendor arrives at scheduled time
-7. Pay after job done
+2. Select subcategory (repair, installation, etc)
+3. Share your full address with pincode
+4. Choose preferred date & time slot
+5. Get 3 best vendor matches
+6. Confirm booking
+7. Vendor arrives at scheduled time
+8. Pay after job done
 
 👷 *For Vendors/Partners:*
 
@@ -139,10 +140,10 @@ Reply *START* to begin registration`,
 🔹 Build your reputation with ratings
 
 📞 *Support:*
-WhatsApp: +${config.whatsapp.phoneNumberId}
+Reply to this chat for assistance
 Hours: 9 AM - 9 PM (Mon-Sat)
 
-🌐 Service Areas: Delhi NCR`
+🌐 Service Areas: Delhi NCR | Jhansi`
   );
   console.log('✅ Help info sent\n');
 

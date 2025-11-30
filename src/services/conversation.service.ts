@@ -195,16 +195,16 @@ export class ConversationService {
     }
 
     const text = state.language === 'hi'
-      ? `✅ ${matches.length} vendors मिले!\n\nकब चाहिए?`
-      : `✅ Found ${matches.length} vendors!\n\nWhen do you need?`;
+      ? `✅ ${matches.length} vendors मिले!\n\n📅 कब चाहिए service?\n\nOr type specific date & time\n(Example: Tomorrow 2 PM)`
+      : `✅ Found ${matches.length} vendors!\n\n📅 When do you need service?\n\nOr type specific date & time\n(Example: Dec 1, 10 AM)`;
 
     await this.whatsapp.sendButtons(
       message.from,
       text,
       [
-        { id: 'slot_today', title: 'Today' },
-        { id: 'slot_tomorrow', title: 'Tomorrow' },
-        { id: 'slot_later', title: 'Later' }
+        { id: 'slot_today', title: '🔥 Today' },
+        { id: 'slot_tomorrow', title: '📅 Tomorrow' },
+        { id: 'slot_later', title: '⏰ Choose Time' }
       ]
     );
 
@@ -213,22 +213,52 @@ export class ConversationService {
   }
 
   private async handleSlot(message: IncomingMessage, state: ConversationState): Promise<void> {
-    state.slot = message.buttonReply?.id || message.text;
-    state.step = 'CONFIRM';
-    await this.sessionService.setState(message.from, state);
+    // If button reply, it's slot selection
+    if (message.buttonReply?.id) {
+      state.slot = message.buttonReply.id;
+      state.step = 'CONFIRM';
+      await this.sessionService.setState(message.from, state);
 
-    const summary = state.language === 'hi'
-      ? `📋 Booking:\n\n${state.category} - ${state.subcategory}\n📍 ${state.address.street}\n🕐 ${state.slot}\n\nConfirm?`
-      : `📋 Booking:\n\n${state.category} - ${state.subcategory}\n📍 ${state.address.street}\n🕐 ${state.slot}\n\nConfirm?`;
+      const summary = state.language === 'hi'
+        ? `📋 Booking Summary:\n\n🛠️ Service: ${state.category} - ${state.subcategory}\n📍 Location: ${state.address.street}\n🕐 Slot: ${this.formatSlot(state.slot)}\n\nConfirm?`
+        : `📋 Booking Summary:\n\n🛠️ Service: ${state.category} - ${state.subcategory}\n📍 Location: ${state.address.street}\n🕐 Slot: ${this.formatSlot(state.slot)}\n\nConfirm?`;
 
-    await this.whatsapp.sendButtons(
-      message.from,
-      summary,
-      [
-        { id: 'confirm_yes', title: '✅ Yes' },
-        { id: 'confirm_no', title: '❌ No' }
-      ]
-    );
+      await this.whatsapp.sendButtons(
+        message.from,
+        summary,
+        [
+          { id: 'confirm_yes', title: '✅ Confirm' },
+          { id: 'confirm_no', title: '❌ Cancel' }
+        ]
+      );
+    } else if (message.text) {
+      // User typed custom date/time
+      state.slot = message.text;
+      state.step = 'CONFIRM';
+      await this.sessionService.setState(message.from, state);
+
+      const summary = state.language === 'hi'
+        ? `📋 Booking:\n\n${state.category} - ${state.subcategory}\n📍 ${state.address.street}\n🕐 ${state.slot}\n\nConfirm?`
+        : `📋 Booking:\n\n${state.category} - ${state.subcategory}\n📍 ${state.address.street}\n🕐 ${state.slot}\n\nConfirm?`;
+
+      await this.whatsapp.sendButtons(
+        message.from,
+        summary,
+        [
+          { id: 'confirm_yes', title: '✅ Confirm' },
+          { id: 'confirm_no', title: '❌ Cancel' }
+        ]
+      );
+    }
+  }
+
+  private formatSlot(slot: string): string {
+    const slotMap: { [key: string]: string } = {
+      'slot_today': 'Today (within 4 hours)',
+      'slot_tomorrow': 'Tomorrow',
+      'slot_later': 'Later (you choose)'
+    };
+    return slotMap[slot] || slot;
   }
 
   private async handleConfirm(message: IncomingMessage, state: ConversationState, customer: any): Promise<void> {
