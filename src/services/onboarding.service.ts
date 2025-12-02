@@ -139,15 +139,15 @@ Reply *START* to begin registration`;
         {
           title: '⭐ Most Popular',
           rows: [
-            { id: 'cat_AC', title: '❄️ AC Repair & Service', description: '₹299 • Install • Gas Fill • Deep Clean' },
-            { id: 'cat_CLEANING', title: '🧹 Home Cleaning', description: '₹399 • Kitchen • Bathroom • Full House' },
-            { id: 'cat_PLUMBING', title: '🔧 Plumbing Solutions', description: '₹199 • Leaks • Pipes • Fittings' },
+            { id: 'cat_AC', title: '❄️ AC Repair & Service', description: '₹299 • Repair • Install • Gas Fill • Deep Clean' },
+            { id: 'cat_CLEANING', title: '🧹 Home Cleaning', description: '₹399 • Deep Clean • Regular • Sofa/Carpet' },
+            { id: 'cat_PLUMBING', title: '🔧 Plumbing Solutions', description: '₹199 • Leaks • Install • Blockage' },
           ]
         },
         {
           title: '🔥 In Demand',
           rows: [
-            { id: 'cat_ELECTRICAL', title: '⚡ Electrical Work', description: '₹249 • Wiring • Fans • Switches' },
+            { id: 'cat_ELECTRICAL', title: '⚡ Electrical Work', description: '₹249 • Wiring • Repair • Install' },
             { id: 'cat_PAINTING', title: '🎨 Painting Services', description: '₹149/sqft • Interior • Exterior • Waterproof' },
             { id: 'cat_CARPENTER', title: '🪚 Carpentry', description: '₹399 • Furniture • Doors • Repairs' },
           ]

@@ -16,13 +16,19 @@ export interface IncomingMessage {
 }
 
 export interface ConversationState {
-  step: 'START' | 'CATEGORY' | 'SUBCATEGORY' | 'ADDRESS' | 'SLOT' | 'CONFIRM' | 'ASSIGNED' | 'FEEDBACK';
+  step: 'START' | 'CATEGORY' | 'SUBCATEGORY' | 'ADDRESS' | 'SLOT' | 'CONFIRM' | 'ASSIGNED' | 'FEEDBACK' | 'VENDOR_NAME' | 'VENDOR_BUSINESS' | 'VENDOR_SERVICES' | 'VENDOR_ADDRESS';
   category?: string;
   subcategory?: string;
   address?: any;
   slot?: string;
   leadId?: string;
   language: 'en' | 'hi';
+  vendorData?: {
+    ownerName?: string;
+    businessName?: string;
+    serviceCategories?: string[];
+    serviceAreas?: string[];
+  };
 }
 
 export interface VendorMatch {

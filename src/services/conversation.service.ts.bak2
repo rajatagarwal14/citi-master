@@ -13,7 +13,6 @@ export class ConversationService {
   private whatsapp = new WhatsAppClient();
   private matchingService = new MatchingService();
   private grokAI = new GrokAIService();
-  private vendorOnboarding = new VendorOnboardingService();
   private onboarding = new OnboardingService();
 
   async handleMessage(message: IncomingMessage): Promise<void> {
@@ -23,8 +22,6 @@ export class ConversationService {
     // Check if vendor onboarding flow
     const isVendorFlow = await this.vendorOnboarding.handleVendorFlow(message, state);
     if (isVendorFlow) return;
-
-    // Check if vendor onboarding flow
 
     // Check if first-time user with greeting
     if (message.text && state.step === 'START' && !customer.name) {
@@ -133,27 +130,13 @@ export class ConversationService {
       ? '🙏 नमस्ते! मैं Citi Master हूं।\n\nकौनसी सर्विस चाहिए?'
       : '👋 Hi! I\'m Citi Master.\n\nWhat service do you need?';
 
-    await this.whatsapp.sendList(
+    await this.whatsapp.sendButtons(
       message.from,
       greeting,
-      'Browse Services',
       [
-        {
-          title: '⭐ Most Popular',
-          rows: [
-            { id: 'cat_AC', title: '❄️ AC Service', description: 'Repair, Install, Gas Fill' },
-            { id: 'cat_CLEANING', title: '🧹 Cleaning', description: 'Deep Clean, Regular' },
-            { id: 'cat_PLUMBING', title: '🔧 Plumbing', description: 'Leaks, Installation' }
-          ]
-        },
-        {
-          title: '🔥 In Demand',
-          rows: [
-            { id: 'cat_ELECTRICAL', title: '⚡ Electrical', description: 'Wiring, Fan, Switches' },
-            { id: 'cat_PAINTING', title: '🎨 Painting', description: 'Interior, Exterior' },
-            { id: 'cat_CARPENTER', title: '🪚 Carpentry', description: 'Furniture, Doors' }
-          ]
-        }
+        { id: 'cat_AC', title: 'AC Service' },
+        { id: 'cat_CLEANING', title: 'Cleaning' },
+        { id: 'cat_PLUMBING', title: 'Plumbing' }
       ]
     );
 
@@ -163,7 +146,6 @@ export class ConversationService {
 
   private async handleCategory(message: IncomingMessage, state: ConversationState): Promise<void> {
     const categoryId = message.buttonReply?.id?.replace('cat_', '') || 
-                       message.listReply?.id?.replace('cat_', '') ||
                        message.text?.toUpperCase();
 
     if (!categoryId || !(categoryId in CATEGORIES)) {

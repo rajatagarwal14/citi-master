@@ -1,0 +1,124 @@
+import { WhatsAppClient } from '../utils/whatsapp-client';
+import { SessionService } from './session.service';
+import { firebaseDb } from '../utils/firebase-db';
+import { IncomingMessage, ConversationState } from '../types';
+import { logger } from '../utils/logger';
+
+export interface VendorData {
+  ownerName?: string;
+  businessName?: string;
+  serviceCategories?: string[];
+  serviceAreas?: string[];
+}
+
+export class VendorOnboardingService {
+  private whatsapp = new WhatsAppClient();
+  private sessionService = new SessionService();
+
+  async handleVendorFlow(message: IncomingMessage, state: ConversationState): Promise<boolean> {
+    // Start vendor onboarding
+    if (message.buttonReply?.id === 'vendor_start') {
+      state.step = 'VENDOR_NAME';
+      await this.sessionService.setState(message.from, state);
+      await this.whatsapp.sendText(
+        message.from,
+        `👋 *Welcome Partner!*\n\nLet's get you registered in 5 simple steps.\n\n�� *Step 1/5*\nWhat's your full name?\n\n💬 Example: Rajesh Kumar`
+      );
+      return true;
+    }
+
+    // Collect vendor name
+    if (state.step === 'VENDOR_NAME') {
+      state.vendorData = state.vendorData || {};
+      state.vendorData.ownerName = message.text || '';
+      state.step = 'VENDOR_BUSINESS';
+      await this.sessionService.setState(message.from, state);
+      await this.whatsapp.sendText(
+        message.from,
+        `✅ Great, ${state.vendorData.ownerName}!\n\n📝 *Step 2/5*\nWhat's your business name?\n\n💬 Example: Kumar AC Services`
+      );
+      return true;
+    }
+
+    // Collect business name
+    if (state.step === 'VENDOR_BUSINESS') {
+      state.vendorData = state.vendorData || {};
+      state.vendorData.businessName = message.text || '';
+      state.step = 'VENDOR_SERVICES';
+      await this.sessionService.setState(message.from, state);
+      await this.whatsapp.sendList(
+        message.from,
+        `✅ Perfect!\n\n📝 *Step 3/5*\nWhich services do you provide?\n\nSelect your main service category:`,
+        '🛠️ Choose Service',
+        [
+          {
+            title: 'Available Services',
+            rows: [
+              { id: 'vendor_service_AC', title: '❄️ AC Service', description: 'Repair, installation, maintenance' },
+              { id: 'vendor_service_CLEANING', title: '🧹 Cleaning', description: 'Home, office cleaning' },
+              { id: 'vendor_service_PLUMBING', title: '🔧 Plumbing', description: 'Pipes, leaks, installation' },
+              { id: 'vendor_service_ELECTRICAL', title: '⚡ Electrical', description: 'Wiring, repair, install' },
+              { id: 'vendor_service_PAINTING', title: '🎨 Painting', description: 'Interior, exterior' },
+              { id: 'vendor_service_CARPENTER', title: '🪚 Carpentry', description: 'Furniture, doors' }
+            ]
+          }
+        ]
+      );
+      return true;
+    }
+
+    // Collect services
+    if (state.step === 'VENDOR_SERVICES') {
+      state.vendorData = state.vendorData || {};
+      const serviceId = message.listReply?.id?.replace('vendor_service_', '') || message.text?.toUpperCase() || 'AC';
+      state.vendorData.serviceCategories = [serviceId];
+      state.step = 'VENDOR_ADDRESS';
+      await this.sessionService.setState(message.from, state);
+      await this.whatsapp.sendText(
+        message.from,
+        `✅ ${serviceId} selected!\n\n📝 *Step 4/5*\nWhich areas do you serve?\n\nShare your service locations:\n\n💬 Example:\nKarol Bagh, Delhi\nConnaught Place, Delhi\nJhansi, UP`
+      );
+      return true;
+    }
+
+    // Collect address/service areas
+    if (state.step === 'VENDOR_ADDRESS') {
+      state.vendorData = state.vendorData || {};
+      state.vendorData.serviceAreas = message.text?.split('\n').map((a: string) => a.trim()) || ['Delhi NCR'];
+      
+      // Create vendor
+      try {
+        const vendor = await firebaseDb.createVendor({
+          phoneNumber: message.from,
+          ownerName: state.vendorData.ownerName || 'Unknown',
+          businessName: state.vendorData.businessName || 'Unknown Business',
+          serviceCategories: state.vendorData.serviceCategories || ['AC'],
+          serviceAreas: state.vendorData.serviceAreas,
+          isActive: true,
+          rating: 4.5
+        });
+
+        await this.whatsapp.sendText(
+          message.from,
+          `🎉 *Congratulations ${state.vendorData.ownerName}!*\n\n✅ You're now registered as:\n*${state.vendorData.businessName}*\n\n📋 *Your Details:*\n🛠️ Services: ${(state.vendorData.serviceCategories || []).join(', ')}\n📍 Areas: ${(state.vendorData.serviceAreas || []).slice(0, 2).join(', ')}\n⭐ Rating: 4.5/5\n\n🔥 *Next Steps:*\n• Our team will verify your profile (24 hrs)\n• You'll start receiving customer leads\n• Complete jobs to earn money\n\n💰 Commission: 15% per booking\n📞 Support: +91-9999663120\n\nVendor ID: ${vendor.id}`
+        );
+
+        // Reset state
+        state.step = 'START';
+        state.vendorData = undefined;
+        await this.sessionService.setState(message.from, state);
+      } catch (error) {
+        logger.error(error, 'Error creating vendor');
+        await this.whatsapp.sendText(
+          message.from,
+          `❌ Sorry, there was an error registering you. Please try again or contact support at +91-9999663120`
+        );
+        state.step = 'START';
+        await this.sessionService.setState(message.from, state);
+      }
+      return true;
+    }
+
+    return false;
+  }
+}
