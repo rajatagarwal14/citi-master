@@ -292,7 +292,7 @@ export class ConversationService {
 📍 ${state.address?.area || 'Your area'}
 
 💬 Meanwhile, you can call us:
-📞 +91-9999663120
+📞 1800-CITIMSTR
 
 Booking ID: ${state.leadId}`
           : `📋 *Booking Received!*
@@ -304,7 +304,7 @@ Booking ID: ${state.leadId}`
 📍 ${state.address?.area || 'Your area'}
 
 💬 Meanwhile, you can call us:
-📞 +91-9999663120
+📞 1800-CITIMSTR
 
 Booking ID: ${state.leadId}`
       );

@@ -100,7 +100,7 @@ export class VendorOnboardingService {
 
         await this.whatsapp.sendText(
           message.from,
-          `🎉 *Congratulations ${state.vendorData.ownerName}!*\n\n✅ You're now registered as:\n*${state.vendorData.businessName}*\n\n📋 *Your Details:*\n🛠️ Services: ${(state.vendorData.serviceCategories || []).join(', ')}\n📍 Areas: ${(state.vendorData.serviceAreas || []).slice(0, 2).join(', ')}\n⭐ Rating: 4.5/5\n\n🔥 *Next Steps:*\n• Our team will verify your profile (24 hrs)\n• You'll start receiving customer leads\n• Complete jobs to earn money\n\n💰 Commission: 15% per booking\n📞 Support: 1800-CITIMSTR\n\nVendor ID: ${vendor.id}`
+          `🎉 *Congratulations ${state.vendorData.ownerName}!*\n\n✅ You're now registered as:\n*${state.vendorData.businessName}*\n\n📋 *Your Details:*\n🛠️ Services: ${(state.vendorData.serviceCategories || []).join(', ')}\n📍 Areas: ${(state.vendorData.serviceAreas || []).slice(0, 2).join(', ')}\n⭐ Rating: 4.5/5\n\n🔥 *Next Steps:*\n• Our team will verify your profile (24 hrs)\n• You'll start receiving customer leads\n• Complete jobs to earn money\n\n💰 Commission: 15% per booking\n📞 Support: +91-9999663120\n\nVendor ID: ${vendor.id}`
         );
 
         // Reset state
