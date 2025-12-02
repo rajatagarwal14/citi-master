@@ -4,6 +4,7 @@ import { WhatsAppClient } from '../utils/whatsapp-client';
 import { firebaseDb } from '../utils/firebase-db';
 import { logger } from '../utils/logger';
 import { VendorOnboardingService } from './vendor-onboarding.service';
+import { ChatSupportService } from './chat-support.service';
 import { MatchingService } from './matching.service';
 import { GrokAIService } from './grok-ai.service';
 import { OnboardingService } from './onboarding.service';
@@ -15,6 +16,7 @@ export class ConversationService {
   private grokAI = new GrokAIService();
   private vendorOnboarding = new VendorOnboardingService();
   private onboarding = new OnboardingService();
+  private chatSupport = new ChatSupportService();
 
   async handleMessage(message: IncomingMessage): Promise<void> {
     const state = await this.sessionService.getState(message.from);
@@ -23,6 +25,10 @@ export class ConversationService {
     // Check if vendor onboarding flow
     const isVendorFlow = await this.vendorOnboarding.handleVendorFlow(message, state);
     if (isVendorFlow) return;
+
+    // Check if chat support flow
+    const isChatFlow = await this.chatSupport.handleChatSupport(message, state);
+    if (isChatFlow) return;
 
     // Check if vendor onboarding flow
 
@@ -49,8 +55,9 @@ export class ConversationService {
     }
 
     if (message.buttonReply?.id === 'more_info' || message.buttonReply?.id === 'help_info') {
-      await this.onboarding.sendHelpInfo(message.from, 'general');
-      return;
+      // Trigger chat support instead of static help
+      const isChatFlow = await this.chatSupport.handleChatSupport(message, state);
+      if (isChatFlow) return;
     }
 
     // Handle button responses from help screen

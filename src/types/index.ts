@@ -16,7 +16,7 @@ export interface IncomingMessage {
 }
 
 export interface ConversationState {
-  step: 'START' | 'CATEGORY' | 'SUBCATEGORY' | 'ADDRESS' | 'SLOT' | 'CONFIRM' | 'ASSIGNED' | 'FEEDBACK' | 'VENDOR_NAME' | 'VENDOR_BUSINESS' | 'VENDOR_SERVICES' | 'VENDOR_ADDRESS';
+  step: 'START' | 'CATEGORY' | 'SUBCATEGORY' | 'ADDRESS' | 'SLOT' | 'CONFIRM' | 'ASSIGNED' | 'FEEDBACK' | 'VENDOR_NAME' | 'VENDOR_BUSINESS' | 'VENDOR_SERVICES' | 'VENDOR_ADDRESS' | 'CHAT' | 'CALLBACK_REQUEST';
   category?: string;
   subcategory?: string;
   address?: any;
@@ -29,6 +29,8 @@ export interface ConversationState {
     serviceCategories?: string[];
     serviceAreas?: string[];
   };
+  chatMessages?: Array<{role: 'user' | 'assistant', content: string}>;
+  callbackRequested?: boolean;
 }
 
 export interface VendorMatch {

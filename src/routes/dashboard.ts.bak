@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 // Removed Prisma - using Firebase
 import { redis } from '../utils/redis';
-import { firebaseDb } from '../utils/firebase-db';
 
 export const dashboardRouter = Router();
 

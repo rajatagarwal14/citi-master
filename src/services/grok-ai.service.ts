@@ -163,4 +163,25 @@ Example: "Near Metro, Karol Bagh, Delhi 110005" -> {"area": "Karol Bagh", "city"
       return { street: addressText };
     }
   }
+
+  /**
+   * General chat/Q&A with context
+   */
+  async chat(userMessage: string): Promise<string> {
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'grok-beta',
+        messages: [
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.7,
+        max_tokens: 200,
+      });
+
+      return response.choices[0].message.content || 'Sorry, I could not generate a response.';
+    } catch (error) {
+      logger.error(error, 'Grok chat error');
+      return 'I apologize, but I\'m having trouble responding right now. Please try again or type "callback" to speak with our team.';
+    }
+  }
 }

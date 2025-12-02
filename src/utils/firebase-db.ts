@@ -108,4 +108,29 @@ export const firebaseDb = {
       createdAt: new Date().toISOString(),
     });
   },
+
+  // Callback requests
+  async createCallbackRequest(data: any): Promise<any> {
+    const docRef = await collections.callbacks.add({
+      ...data,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    return { id: docRef.id, ...data };
+  },
+
+  async getCallbackRequests(limit = 20): Promise<any[]> {
+    const snapshot = await collections.callbacks
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
+
+  async updateCallbackStatus(id: string, status: string): Promise<void> {
+    await collections.callbacks.doc(id).update({
+      status,
+      updatedAt: new Date().toISOString(),
+    });
+  },
 };

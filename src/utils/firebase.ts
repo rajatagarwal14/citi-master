@@ -26,4 +26,5 @@ export const collections = {
   messages: db.collection('messages'),
   payments: db.collection('payments'),
   issues: db.collection('issues'),
+  callbacks: db.collection('callbacks'),
 };

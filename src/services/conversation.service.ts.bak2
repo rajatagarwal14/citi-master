@@ -4,15 +4,18 @@ import { WhatsAppClient } from '../utils/whatsapp-client';
 import { firebaseDb } from '../utils/firebase-db';
 import { logger } from '../utils/logger';
 import { VendorOnboardingService } from './vendor-onboarding.service';
+import { ChatSupportService } from './chat-support.service';
 import { MatchingService } from './matching.service';
 import { GrokAIService } from './grok-ai.service';
 import { OnboardingService } from './onboarding.service';
+import { ChatSupportService } from './chat-support.service';
 
 export class ConversationService {
   private sessionService = new SessionService();
   private whatsapp = new WhatsAppClient();
   private matchingService = new MatchingService();
   private grokAI = new GrokAIService();
+  private vendorOnboarding = new VendorOnboardingService();
   private onboarding = new OnboardingService();
 
   async handleMessage(message: IncomingMessage): Promise<void> {
@@ -22,6 +25,8 @@ export class ConversationService {
     // Check if vendor onboarding flow
     const isVendorFlow = await this.vendorOnboarding.handleVendorFlow(message, state);
     if (isVendorFlow) return;
+
+    // Check if vendor onboarding flow
 
     // Check if first-time user with greeting
     if (message.text && state.step === 'START' && !customer.name) {
@@ -130,13 +135,27 @@ export class ConversationService {
       ? '🙏 नमस्ते! मैं Citi Master हूं।\n\nकौनसी सर्विस चाहिए?'
       : '👋 Hi! I\'m Citi Master.\n\nWhat service do you need?';
 
-    await this.whatsapp.sendButtons(
+    await this.whatsapp.sendList(
       message.from,
       greeting,
+      'Browse Services',
       [
-        { id: 'cat_AC', title: 'AC Service' },
-        { id: 'cat_CLEANING', title: 'Cleaning' },
-        { id: 'cat_PLUMBING', title: 'Plumbing' }
+        {
+          title: '⭐ Most Popular',
+          rows: [
+            { id: 'cat_AC', title: '❄️ AC Service', description: 'Repair, Install, Gas Fill' },
+            { id: 'cat_CLEANING', title: '🧹 Cleaning', description: 'Deep Clean, Regular' },
+            { id: 'cat_PLUMBING', title: '🔧 Plumbing', description: 'Leaks, Installation' }
+          ]
+        },
+        {
+          title: '🔥 In Demand',
+          rows: [
+            { id: 'cat_ELECTRICAL', title: '⚡ Electrical', description: 'Wiring, Fan, Switches' },
+            { id: 'cat_PAINTING', title: '🎨 Painting', description: 'Interior, Exterior' },
+            { id: 'cat_CARPENTER', title: '🪚 Carpentry', description: 'Furniture, Doors' }
+          ]
+        }
       ]
     );
 
@@ -146,6 +165,7 @@ export class ConversationService {
 
   private async handleCategory(message: IncomingMessage, state: ConversationState): Promise<void> {
     const categoryId = message.buttonReply?.id?.replace('cat_', '') || 
+                       message.listReply?.id?.replace('cat_', '') ||
                        message.text?.toUpperCase();
 
     if (!categoryId || !(categoryId in CATEGORIES)) {
@@ -274,7 +294,7 @@ export class ConversationService {
 📍 ${state.address?.area || 'Your area'}
 
 💬 Meanwhile, you can call us:
-📞 +91-9999663120
+📞 1800-CITIMSTR
 
 Booking ID: ${state.leadId}`
           : `📋 *Booking Received!*
@@ -286,7 +306,7 @@ Booking ID: ${state.leadId}`
 📍 ${state.address?.area || 'Your area'}
 
 💬 Meanwhile, you can call us:
-📞 +91-9999663120
+📞 1800-CITIMSTR
 
 Booking ID: ${state.leadId}`
       );
